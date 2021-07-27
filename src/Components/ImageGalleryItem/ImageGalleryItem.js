@@ -1,5 +1,6 @@
 import React from "react";
 import styles from "./ImageGalleryItem.module.css";
+import PropTypes from "prop-types";
 
 export const ImageGalleryItem = ({ collection, actionBackground }) => {
   return collection.map((el) => (
@@ -16,4 +17,9 @@ export const ImageGalleryItem = ({ collection, actionBackground }) => {
       />
     </li>
   ));
+};
+
+ImageGalleryItem.propTypes = {
+  collection: PropTypes.array.isRequired,
+  actionBackground: PropTypes.func.isRequired,
 };
