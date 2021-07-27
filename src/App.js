@@ -67,11 +67,10 @@ class App extends Component {
     }));
   };
 
-  onClickPicture(e) {
-    console.log(e.target.dataset.source);
-    // this.setState({ modalContent: e.target.dataset.source });
-    // this.toggleModal();
-  }
+  onClickPicture = (e) => {
+    this.setState({ modalContent: e.target.dataset.source });
+    this.toggleModal();
+  };
 
   render() {
     const { loading, error, pictures, query, openModal, modalContent } =
