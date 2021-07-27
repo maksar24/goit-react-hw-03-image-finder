@@ -1,13 +1,10 @@
 import React, { Component } from "react";
-import "./App.css";
-import axios from "axios";
-import Loader from "react-loader-spinner";
-
-const fetchPictures = async (query, page) => {
-  return await axios.get(
-    `https://pixabay.com/api/?q=${query}&page=${page}&key=22033849-04a58a8d7b6d53f5d68e2165a&image_type=photo&orientation=horizontal&per_page=12`
-  );
-};
+import styles from "./App.module.css";
+import { fetchPictures } from "./Components/API";
+import { Searchbar } from "./Components/Searchbar/Searchbar";
+import { ImageGallery } from "./Components/ImageGallery/ImageGallery";
+import { CustomLoader } from "./Components/Loader/Loader";
+import { Modal } from "./Components/Modal/Modal";
 
 class App extends Component {
   state = {
@@ -16,101 +13,90 @@ class App extends Component {
     loading: false,
     currentPage: 1,
     query: "",
+    openModal: false,
+    modalContent: null,
   };
 
   componentDidUpdate(prevProps, prevState) {
-    if (prevState.currentPage !== this.state.currentPage) {
-      (async () => {
-        try {
-          this.setState({ loading: true });
-          const pictures = await fetchPictures(
-            this.state.query,
-            this.state.currentPage
-          );
-          this.setState({
-            pictures: [...prevState.pictures, ...pictures.data.hits],
-            loading: false,
-          });
-        } catch (error) {
-          this.setState({ error: "error", loading: false });
-        }
-      })();
+    const { currentPage, query } = this.state;
+
+    if (prevState.currentPage !== currentPage || prevState.query !== query) {
+      if (prevState.query !== query) {
+        this.cleanData();
+      }
+
+      this.setState({ loading: true });
+      fetchPictures(query, currentPage)
+        .then((el) => {
+          this.setState((prevState) => ({
+            pictures: [...prevState.pictures, ...el.data.hits],
+          }));
+        })
+        .catch(() => {
+          this.setState({ error: "error" });
+        })
+        .finally(() => {
+          this.scroll();
+          this.setState({ loading: false });
+        });
     }
   }
-
-  getPictures = async () => {
-    try {
-      this.setState({ loading: true });
-      const pictures = await fetchPictures(
-        this.state.query,
-        this.state.currentPage
-      );
-      this.setState({ pictures: pictures.data.hits, loading: false });
-    } catch (error) {
-      this.setState({ error: "error", loading: false });
-    }
-  };
 
   nextPage = () => {
     this.setState({ currentPage: this.state.currentPage + 1 });
   };
 
-  getQuery = (e) => {
-    this.setState({ query: e.currentTarget.value });
+  handleSubmit = (value) => {
+    this.setState({ query: value });
   };
 
-  handleSubmit = (e) => {
-    e.preventDefault();
-
-    this.getPictures();
+  scroll = () => {
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: "smooth",
+    });
   };
+
+  cleanData = () => {
+    this.setState({ pictures: [] });
+  };
+
+  toggleModal = () => {
+    this.setState(({ openModal }) => ({
+      openModal: !openModal,
+    }));
+  };
+
+  onClickPicture(e) {
+    console.log(e.target.dataset.source);
+    // this.setState({ modalContent: e.target.dataset.source });
+    // this.toggleModal();
+  }
 
   render() {
-    const { loading, error, pictures } = this.state;
+    const { loading, error, pictures, query, openModal, modalContent } =
+      this.state;
 
     return (
-      <div>
-        <header className="Searchbar">
-          <form className="SearchForm" onSubmit={this.handleSubmit}>
-            <button type="submit" className="SearchForm-button">
-              <span className="SearchForm-button-label">Search</span>
-            </button>
-
-            <input
-              className="SearchForm-input"
-              type="text"
-              autoComplete="off"
-              autoFocus
-              placeholder="Search images and photos"
-              onChange={this.getQuery}
-            />
-          </form>
-        </header>
-        {loading && (
-          <Loader
-            type="Rings"
-            color="#00FA9A"
-            height={100}
-            width={100}
-            timeout={3000}
+      <div className={styles.App}>
+        <Searchbar onSubmit={this.handleSubmit} />
+        {loading && <CustomLoader />}
+        {error ? (
+          <h2 className={styles.Title}>error (ಠ_ಠ) error</h2>
+        ) : query === "" ? (
+          <h2 className={styles.Title}>Try to look for something 🔍</h2>
+        ) : (
+          <ImageGallery
+            collection={pictures}
+            actionButton={this.nextPage}
+            actionBackground={this.onClickPicture}
           />
         )}
-        {error ? (
-          <h2>{error}</h2>
-        ) : (
-          <ul className="ImageGallery">
-            {pictures.map((picture) => (
-              <li className="ImageGalleryItem" key={picture.id}>
-                <img
-                  src={picture.webformatURL}
-                  alt=""
-                  className="ImageGalleryItem-image"
-                />
-              </li>
-            ))}
-            <button onClick={this.nextPage}>Load more</button>
-          </ul>
-        )}
+        <Modal
+          onClickModal={this.toggleModal}
+          largeImageURL={modalContent}
+          openModal={openModal}
+        />
       </div>
     );
   }
