@@ -17,7 +17,7 @@ export const ImageGallery = ({
           actionBackground={actionBackground}
         />
       </ul>
-      <Button action={actionButton} />
+      {collection.length > 11 && <Button action={actionButton} />}
     </div>
   );
 };
